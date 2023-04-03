@@ -20,7 +20,7 @@ pygame.display.set_caption("Ecosystem")
 FPS = 60
 
 # Set up game Scale in pixels for 1 tile
-scale = 20
+scale = 10
 
 # set up the text font
 test_font = pygame.font.Font(None, 150)
@@ -31,10 +31,10 @@ clock = pygame.time.Clock()
 timer = 0
 
 # time between plant reproduce
-plant_spawn_time = 200
+plant_spawn_time = 1200
 
 # starting plants
-starting_plants = 20
+starting_plants = 140
 
 # starting herbivores
 starting_herbivores = 6
@@ -42,9 +42,9 @@ starting_herbivores = 6
 # starting herbivores
 starting_carnivores = 2
 
-carnivore_limit = 10
-tree_limit = 100
-herbivore_limit = 30
+carnivore_limit = 15
+tree_limit = 200
+herbivore_limit = 40
 
 
 
@@ -131,6 +131,8 @@ class create_herbivore(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
         self.time = randint(0, 100)
+        self.life = 0
+        self.max_life = 10000
         self.state = 0
         self.tree_list = ()
         self.xsearch_distance = 0
@@ -148,9 +150,10 @@ class create_herbivore(pygame.sprite.Sprite):
     def update(self, something):
         self.tree_list = (something)
 
-    def play_herbivore(self, carniroves, herbivores, scale):
+    def play_herbivore(self, carniroves, carnivore_limit, herbivores, scale):
         self.hunger += 1
         self.time += 1
+        self.life += 1
         self.list = (self.tree_list)
 
         if self.hunger > self.max_hunger // 4 and self.danger == 0:
@@ -220,8 +223,10 @@ class create_herbivore(pygame.sprite.Sprite):
                             delta = 0
                             while delta != offsprings:
                                 delta += 1
-                                herbivore = create_herbivore(self.rect.x, self.rect.y, scale)
-                                herbivores.add(herbivore)
+                                herbivore_number = len(herbivores)
+                                if herbivore_number < herbivore_limit:
+                                    herbivore = create_herbivore(self.rect.x, self.rect.y, scale)
+                                    herbivores.add(herbivore)
                                 self.time = 0
 
             if x > self.rect.x:
@@ -248,7 +253,7 @@ class create_herbivore(pygame.sprite.Sprite):
             if self.random_move_y < random_c:
                 self.rect.y -= self.walk / 3
 
-        if self.hunger == self.max_hunger:
+        if self.hunger == self.max_hunger or self.life == self.max_life:
             for herbivore in herbivores:
                 if herbivore == self:
                     herbivore.kill()
@@ -289,13 +294,15 @@ class create_carnivore(pygame.sprite.Sprite):
         self.image = pygame.Surface((scale, scale))
         self.image.fill(RED)
         self.rect = self.image.get_rect()
-        self.walk = 2
+        self.walk = 3
         self.run = 3
         self.max_hunger = 2000
         self.hunger = randint(0, self.max_hunger // 4)
         self.rect.x = x
         self.rect.y = y
         self.time = randint(0, 100)
+        self.life = 0
+        self.max_life = 10000
         self.state = 0
         self.tree_list = ()
         self.xsearch_distance = 0
@@ -312,11 +319,11 @@ class create_carnivore(pygame.sprite.Sprite):
     def update(self, herbivores):
         self.food_list = (herbivores)
 
-    def play_carnivore(self, carnivores, scale):
+    def play_carnivore(self, carnivores, carnivore_limit, herbivores, scale):
         self.hunger += 1
         self.time += 1
+        self.life += 1
         self.list = (self.food_list)
-        print(self.hunger)
 
         if self.hunger > self.max_hunger // 3:
 
@@ -385,8 +392,10 @@ class create_carnivore(pygame.sprite.Sprite):
                             delta = 0
                             while delta != offsprings:
                                 delta += 1
-                                carnivore = create_carnivore(self.rect.x, self.rect.y, scale)
-                                carnivores.add(carnivore)
+                                carnivore_number = len(carnivores)
+                                if carnivore_number < carnivore_limit:
+                                    carnivore = create_carnivore(self.rect.x, self.rect.y, scale)
+                                    carnivores.add(carnivore)
                                 self.time = 0
 
             if x > self.rect.x:
@@ -413,7 +422,7 @@ class create_carnivore(pygame.sprite.Sprite):
             if self.random_move_y < random_c:
                 self.rect.y -= self.walk / 3
 
-        if self.hunger == self.max_hunger:
+        if self.hunger == self.max_hunger or self.life == self.max_life:
             for carnivore in carnivores:
                 if carnivore == self:
                     carnivore.kill()
@@ -512,18 +521,17 @@ while Game == True:
                 sprite.time = 0
             if sprite.state == 2:
                 tree_number = len(plants)
-                if tree_number < tree_limit:
-                    new_plant(sprite.rect.x, sprite.rect.y, scale, plants, plant_spawn_time)
-                    sprite.time = 0
+                new_plant(sprite.rect.x, sprite.rect.y, scale, plants, plant_spawn_time)
+                sprite.time = 0
 
     # uptade herbivors:
     for herbivore in herbivores:
-        herbivore.play_herbivore(carnivores, herbivores, scale)
+        herbivore.play_herbivore(carnivores, herbivore_limit, herbivores, scale)
         herbivores.update(plants)
 
     # uptade carnivores:
     for carnivore in carnivores:
-        carnivore.play_carnivore(carnivores, scale)
+        carnivore.play_carnivore(carnivores, carnivore_limit, herbivores, scale)
         carnivore.update(herbivores)
 
     # prevent creatures from moving out of the screen
